@@ -11,6 +11,7 @@ use Illuminate\Notifications\Notifiable;
 use Laratrust\Traits\LaratrustUserTrait;
 
 use Laravel\Passport\HasApiTokens;
+use Laravel\Socialite\Contracts\User as SocialiteUser;
 
 use Illuminate\Support\Facades\DB;
 
@@ -128,18 +129,87 @@ class User extends Authenticatable
     }
 
 
-    public function getUserRoles(){
+    /**
+     * @param SocialiteUser $socialize_user
+     * @param string        $provider
+     *
+     * @return User
+     */
+    public static function socialite(SocialiteUser $socialize_user, $provider)
+    {
+      $id_field = $provider == 'geobuilder' ? 'egis_user_id' : $provider . '_id';
+      $socialite_id = $socialize_user->getId();
+      $user = User::where($id_field, $socialite_id)->first();
 
-      $roles_ = DB::table( 'role_user' )->where( 'user_id', $this->id )
-        ->select('role_id')->get();
-
-      $roles = [];
-      if ($roles_) {
-        foreach ($roles_ as $key => $role) {
-          $roles[$key] = $role->role_id;
-        }
+      if (!$user) {
+          $user = new User;
+          $user->{$id_field} = $socialite_id;
+          $user->name = $socialize_user->getName() ?: '';
+          $user->egis_user_name = $socialize_user->getName() ?: '';
+          $user->password = ''; // TODO: make nullable
+          $user->save();
       }
-      return $roles;
+
+      return $user;
+    }
+
+
+    public function getUserRoles()
+    {
+        $roles_ = DB::table( 'role_user' )->where( 'user_id', $this->id )
+          ->select('role_id')->get();
+
+        $roles = [];
+        if ($roles_) {
+          foreach ($roles_ as $key => $role) {
+            $roles[$key] = $role->role_id;
+          }
+        }
+        return $roles;
+    }
+
+    public function getUserRoleNames()
+    {
+        $roles_ = DB::table('role_user')
+          ->select('role_user', 'roles.name as role_name')
+          ->join('roles', 'role_user.role_id', '=', 'roles.id')
+          ->where( 'user_id', $this->id )
+          ->get();
+
+        $roles = [];
+        if ($roles_) {
+          foreach ($roles_ as $key => $role) {
+            $roles[$key] = $role->role_name;
+          }
+        }
+        return $roles;
+    }
+
+    public function getAllUserRoleNames()
+    {
+        $roles_ = DB::table('roles')->select('name')->get();
+        $roles = [];
+        if ($roles_) {
+          foreach ($roles_ as $key => $role) {
+            $roles[$key] = $role->name;
+          }
+        }
+        return $roles;
+    }
+
+    public function setUserRolesByNames($role_names)
+    {
+        DB::table('role_user')->where( 'user_id', $this->id )->delete();
+        $role_ids = DB::table('roles')->whereIn( 'name', $role_names )->select('id')->get();
+        $insert_data = $role_ids->map(function ($role) {
+            $row = [
+                'role_id' => $role->id,
+                'user_id' => $this->id,
+                'user_type' => 'user'
+            ];
+            return $row;
+        })->all();
+        DB::table('role_user')->insert($insert_data);
     }
 
 }

@@ -34,4 +34,14 @@ return [
         'token' => env('ALTRP_SETTING_TELEGRAM_BOT_TOKEN', '')
     ],
 
+    'geobuilder' => [
+      'oidc_url' => env('GEOBUILDER_OIDC_URL'),
+      'permissions_url' => env('GEOBUILDER_PERMISSIONS_URL'),
+      'client_id' => env('GEOBUILDER_CLIENT_ID'),
+      'client_secret' => env('GEOBUILDER_CLIENT_SECRET'),
+      'redirect' => env('GEOBUILDER_REDIRECT_URI'),
+      'state' => env('GEOBUILDER_STATE'),
+      'nonce' => env('GEOBUILDER_NONCE'),
+    ]
+
 ];

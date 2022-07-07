@@ -1,6 +1,6 @@
 {
   "presets": [
-    "@babel/preset-env",
+    "@babel/env",
     "@babel/preset-react"
   ],
   "plugins": [
@@ -17,6 +17,11 @@
         "loose": true
       }
     ],
-    ["@babel/plugin-proposal-private-property-in-object", { "loose": true }]
+    [
+      "@babel/plugin-proposal-private-property-in-object",
+      {
+        "loose": true
+      }
+    ]
   ]
 }
